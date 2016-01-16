@@ -292,6 +292,7 @@
 				0E3291621C1A265A004722DE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

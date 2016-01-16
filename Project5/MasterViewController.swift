@@ -75,19 +75,13 @@ class MasterViewController: UITableViewController {
     func wordIsPossible (answer:String) -> Bool {
         //create a set with all characters of title == all characters you can use to create your word
         var titleArray =  Array(title!.characters)
-        print(titleArray)
         
         for Acharacter in answer.characters {
-            print("answer: \(Acharacter)")
             if titleArray.contains(Acharacter) {
-               //the character is valid
                titleArray.removeOne(Acharacter)
-               print(titleArray)
+               //print(titleArray)
             } else {
-               let ac = UIAlertController(title: "The character \(Acharacter) is not contained in \(title!)", message: nil, preferredStyle: .Alert)
-                ac.addAction(UIAlertAction(title:"Continue", style: .Default, handler:nil))
-                ac.addAction(UIAlertAction(title:"End Game", style: .Default, handler:endGame))
-                presentViewController(ac, animated: true, completion: nil)
+                showUIAlertAction("The character \(Acharacter) is not contained in \(title!)")
                 return false
             }
         }
@@ -95,12 +89,10 @@ class MasterViewController: UITableViewController {
     }
     
     func wordIsOriginal (answer:String) -> Bool {
+    //I could have used forEach or just return: return !objects.contains(word)
         for word in objects {
             if answer == word {
-                let ac = UIAlertController(title: "The word: \(answer) is alreday part of the answers", message: nil, preferredStyle: .Alert)
-                ac.addAction(UIAlertAction(title:"Continue", style: .Default, handler:nil))
-                ac.addAction(UIAlertAction(title:"End Game", style: .Default, handler:endGame))
-                presentViewController(ac, animated: true, completion: nil)
+                showUIAlertAction("The word: \(answer) is alreday part of the answers")
                 return false
             }
         }
@@ -108,13 +100,61 @@ class MasterViewController: UITableViewController {
     }
     
     func wordIsReal (answer:String) -> Bool {
-        return true
+        let checker = UITextChecker()
+        let range = NSMakeRange(0, answer.characters.count)
+        let misspelledRange = checker.rangeOfMisspelledWordInString(answer, range: range, startingAt: 0, wrap: false, language: "en")
+        // could have used -- return misspelledRange.location == NSNotFound -- if I was not trying to get a UIAlert too
+        if misspelledRange.location == NSNotFound {
+            return true
+        }
+        showUIAlertAction("The word \(answer) does not exist in English")
+        return false
     }
     
     func endGame (action: UIAlertAction! = nil) {
+        //count how many words and letters you used
+        var letters = 0
+        for word in objects {
+            letters += word.characters.count
+        }
+        ReadWriteToFile("\(objects.count) \(letters)", file: "leaderboard.txt", write: true)
+        let ac = UIAlertController(title: "You completed \(objects.count) valid words and used \(letters) characters", message: nil, preferredStyle: .Alert)
+        ac.addAction(UIAlertAction(title:"LeaderBoard", style: .Default, handler:endGame))
         
     }
     
+    func showUIAlertAction (text:String) {
+        let ac = UIAlertController(title: text, message: nil, preferredStyle: .Alert)
+        ac.addAction(UIAlertAction(title:"Continue", style: .Default, handler:nil))
+        ac.addAction(UIAlertAction(title:"End Game", style: .Default, handler:endGame))
+        presentViewController(ac, animated: true, completion: nil)
+
+    }
+    
+    func ReadWriteToFile (text:String, file:String, write: Bool) -> String {
+        var read = "File Empty"
+        if let dir: NSString = NSSearchPathForDirectoriesInDomains(NSSearchPathDirectory.DocumentDirectory, NSSearchPathDomainMask.AllDomainsMask, true ).first {
+            let path = dir.stringByAppendingPathComponent(file)
+            //write
+            if write {
+                do {
+                    try text.writeToFile(path, atomically: false, encoding: NSUTF8StringEncoding)
+                } catch {
+                    print("Could not write on File")
+                }
+            } else {
+                do {
+                    read = try NSString (contentsOfFile: path, encoding: NSUTF8StringEncoding) as String
+                    return read
+                } catch {
+                    print("Could not read file")
+                }
+            }
+        }
+        return "Done"
+    }
+    
+
     override func viewWillAppear(animated: Bool) {
         self.clearsSelectionOnViewWillAppear = self.splitViewController!.collapsed
         super.viewWillAppear(animated)
@@ -145,11 +185,13 @@ class MasterViewController: UITableViewController {
 
 }
 
-extension Array where Element: Equatable  {
-    mutating func removeOne(e: Element) {
+extension Array where Element: Equatable {
+    mutating func removeOne(e: Element) -> Bool {
         if let int = indexOf(e) {
             removeAtIndex(int)
+            
         }
+        return true
     }
 }
 
